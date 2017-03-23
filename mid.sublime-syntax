@@ -1,0 +1,171 @@
+%YAML 1.2
+---
+# http://www.sublimetext.com/docs/3/syntax.html
+name: mid
+file_extensions:
+  - mid
+scope: source.mid
+contexts:
+  main:
+    - include: comments
+    - include: storagetypes
+    - include: const
+    - include: constgroup
+    - include: enum
+    - include: group
+    - include: struct
+    - include: option
+    - include: constants
+    - include: char
+    - include: strings
+    - include: rawstrings
+    - include: packaging
+    - include: service
+    - match: '\b((0(x|X)[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b'
+      scope: constant.numeric.mid
+  comments:
+    - match: /\*
+      push:
+        - meta_scope: comment.block.mid
+        - match: \*/
+          pop: true
+    - match: //
+      push:
+        - meta_scope: comment.line.double-slash.mid
+        - match: $\n?
+          pop: true
+  constants:
+    - match: \b(true|false)\b
+      scope: constant.language.mid
+  const:
+    - match: '(const)(\s+)([A-Za-z][A-Za-z0-9_]*)(\s*)(=)(\s*)([0-9]*)'
+      captures:
+        1: keyword.source.mid
+        3: constant.other.mid
+        7: constant.numeric.mid
+  constgroup:
+    - match: '(const)(\s*)(\()?'
+      captures:
+        1: keyword.source.mid
+      push:
+        - match: '\}'
+          pop: true
+        - include: comments
+        - match: '([A-Za-z][A-Za-z0-9_]*)(\s*)(=)(\s*)([0-9]*)'
+          captures:
+            1: constant.other.mid
+            5: constant.numeric.mid 
+  enum:
+    - match: '(enum)(\s+)([A-Za-z][A-Za-z0-9_]*)(\s*)(\{)?'
+      captures:
+        1: keyword.source.mid
+        3: entity.name.class.mid
+      push:
+        - match: '\}'
+          pop: true
+        - include: option
+        - include: comments
+        - match: \b(to|extensions)\b
+          scope: keyword.source.mid
+        - match: '([A-Za-z][A-Za-z0-9_]*)(\s*)(=)(\s*)([0-9]*)'
+          captures:
+            1: constant.other.mid
+            5: constant.numeric.mid
+  group:
+    - match: '(group)(\s+)([A-Za-z][A-Za-z0-9_.]*)(\s*)(\{)?'
+      captures:
+        1: keyword.source.mid
+        3: entity.name.class.group.mid
+      push:
+        - match: '\}'
+          pop: true
+        - include: main
+        - include: enum
+        - include: struct
+        - include: comments
+  struct:
+    - match: '(struct|protocol)(\s+)([A-Za-z][A-Za-z0-9_.]*)(\s*)(\{)?'
+      captures:
+        1: keyword.source.mid
+        3: entity.name.class.struct.mid
+      push:
+        - match: '\}'
+          pop: true
+        - include: main
+        - include: enum
+        - include: option
+        - include: commentsS
+        - match: (optional|required)(\s+)
+          captures:
+            1: keyword.source.mid
+          push:
+            - match: ;
+              pop: true
+            - include: storagetypes
+            - match: '(map)<([A-Za-z][A-Za-z0-9_]*),\s*([A-Za-z][A-Za-z0-9_]*)>\s+([A-Za-z][A-Za-z0-9_]*)'
+              captures:
+                1: keyword.source.mid
+                4: entity.name.class.mid
+            - match: '([A-Za-z][A-Za-z0-9_]*)(\s+)([A-Za-z][A-Za-z0-9_]*)'
+              captures:
+                1: entity.name.class.mid
+            - match: '(\s*)(=)(\s*)([0-9]*)'
+              captures:
+                4: constant.numeric.mid
+            - match: '\['
+              push:
+                - match: '\]'
+                  pop: true
+                - match: default|packed|deprecated|lazy
+                  scope: keyword.source.mid
+                - include: constants
+  option:
+    - match: (\b)(option)(\b)
+      captures:
+        2: keyword.source.mid
+      push:
+        - match: ;
+          pop: true
+        - include: comments
+        - include: strings
+        - match: default|packed|optimize\_for|java\_package|java\_outer\_classname|go\_package|deprecated|lazy|\w+\_api\_version
+          scope: storage.type.mid
+        - match: (CODE\_SIZE|SPEED)
+          scope: constant.language.mid
+  packaging:
+    - match: '(package|import)(?=(\s+)(["]?[A-Za-z][A-Za-z0-9-_./]*["]?)(;))'
+      captures:
+        1: keyword.source.mid
+        2: entity.name.tag
+  service:
+    - match: '(service)(\s+)([A-Za-z][A-Za-z0-9_.]*)(\s*)(\{)?'
+      captures:
+        1: keyword.source.mid
+        3: entity.name.class.message.mid
+      push:
+        - match: '\}'
+          pop: true
+        - include: comments
+        - match: '([A-Za-z][A-Z-a-z0-9_]+)\s*\(([A-Za-z0-9_]+)\)\s+\(([A-Za-z0-9_]+)\)\{?'
+          captures:
+            1: entity.name.function
+          push:
+            - match: '\}|;'
+              pop: true
+            - include: comments
+            - include: option
+  storagetypes:
+    - match: \b(vector|map|array|float32|float64|int8|int16|int32|int64|uint8|uint16|uint32|uint64|byte|bool|string|bytes)\b
+      scope: storage.type.mid
+  strings:
+    - match: '"'
+      push:
+        - meta_scope: string.quoted.double.mid
+        - match: '"'
+          pop: true
+  rawstrings:
+    - match: '`'
+      push:
+        - meta_scope: string.quoted.raw.mid
+        - match: '`'
+          pop: true
